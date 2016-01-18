@@ -15,4 +15,14 @@ namespace Lego.Ev3.Core
 		/// </summary>
 		public byte[] Report { get; set; }
 	}
+	    public sealed class BrickDisconnectedEventArgs
+#if !WINRT
+		: EventArgs
+#endif
+    {
+        /// <summary>
+        /// Byte array of the data received from the EV3 brick.
+        /// </summary>
+        public string Details { get; set; }
+    }
 }
