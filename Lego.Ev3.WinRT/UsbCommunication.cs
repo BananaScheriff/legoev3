@@ -19,7 +19,6 @@ namespace Lego.Ev3.WinRT
 		/// Event fired when a complete report is received from the EV3 brick.
 		/// </summary>
 		public event EventHandler<ReportReceivedEventArgs> ReportReceived;
-
 		private const UInt16 VID = 0x0694;
 		private const UInt16 PID = 0x0005;
 		private const UInt16 UsagePage = 0xff00;
@@ -27,6 +26,8 @@ namespace Lego.Ev3.WinRT
 
 		private HidDevice _hidDevice;
 
+		private readonly string _deviceName;
+        	private readonly string _deviceId;
 		/// <summary>
 		/// Connect to the EV3 brick.
 		/// </summary>
@@ -35,12 +36,16 @@ namespace Lego.Ev3.WinRT
 		{
 			return ConnectAsyncInternal().AsAsyncAction();
 		}
-
+    		public UsbCommunication(string device, string deviceId)
+	        {
+	            _deviceName = device;
+	            _deviceId = deviceId;
+	        }
 		private async Task ConnectAsyncInternal()
 		{
 			string selector = HidDevice.GetDeviceSelector(UsagePage, UsageId, VID, PID);
 			DeviceInformationCollection devices = await DeviceInformation.FindAllAsync(selector);
-			DeviceInformation brick = devices.FirstOrDefault();
+			DeviceInformation brick = (from d in devices where d.Id == _deviceId select d).FirstOrDefault();
 			if(brick == null)
 				throw new Exception("No LEGO EV3 bricks found.");
 
