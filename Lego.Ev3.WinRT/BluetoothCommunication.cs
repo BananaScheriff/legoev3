@@ -23,27 +23,30 @@ namespace Lego.Ev3.WinRT
 		/// </summary>
 		public event EventHandler<ReportReceivedEventArgs> ReportReceived;
         	public event EventHandler<BrickDisconnectedEventArgs> BrickDisconnected;
-		private StreamSocket _socket;
-		private DataReader _reader;
+
+        	private StreamSocket _socket;
+		private DataReader reader;
 		private CancellationTokenSource _tokenSource;
 
-		private readonly string _deviceName = "EV3";
+	        private readonly string _deviceName;
+	        private readonly string _deviceId;
 
-		/// <summary>
-		/// Create a new BluetoothCommunication object
-		/// </summary>
-		public BluetoothCommunication()
-		{
-		}
-
-		/// <summary>
-		/// Create a new BluetoothCommunication object
-		/// </summary>
-		/// <param name="device">Devicename of the EV3 brick</param>
-		public BluetoothCommunication(string device)
-		{
-			_deviceName = device;
-		}
+        /// <summary>
+        /// Create a new NetworkCommunication object
+        /// </summary>
+        /// <param name="device">Devicename of the EV3 brick</param>
+        public BluetoothCommunication(string device,string deviceId)
+        {
+            _deviceName = device;
+            _deviceId = deviceId;
+        }
+        /// <summary>
+        /// Create a new NetworkCommunication object
+        /// </summary>
+        public BluetoothCommunication()
+        {
+            _deviceName = "EV3";
+        }
 
 		/// <summary>
 		/// Connect to the EV3 brick.
@@ -57,24 +60,22 @@ namespace Lego.Ev3.WinRT
 		private async Task ConnectAsyncInternal()
 		{
 			_tokenSource = new CancellationTokenSource();
-
 			string selector = RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort);
 			DeviceInformationCollection devices = await DeviceInformation.FindAllAsync(selector);
-			DeviceInformation device = (from d in devices where d.Name == _deviceName select d).FirstOrDefault();
+            		DeviceInformation device = (from d in devices where d.Id == _deviceId select d).FirstOrDefault()
 			if(device == null)
-				throw new Exception("LEGO EV3 brick named '" + _deviceName + "' not found.");
+				throw new Exception("EV3 not found.");
 
 			RfcommDeviceService service = await RfcommDeviceService.FromIdAsync(device.Id);
 			if(service == null)
 				throw new Exception("Unable to connect to LEGO EV3 brick...is the manifest set properly?");
 
 			_socket = new StreamSocket();
-			await _socket.ConnectAsync(service.ConnectionHostName, service.ConnectionServiceName,
+            		await _socket.ConnectAsync(service.ConnectionHostName, service.ConnectionServiceName,
 				 SocketProtectionLevel.BluetoothEncryptionAllowNullAuthentication);
 
-			_reader = new DataReader(_socket.InputStream);
-			_reader.ByteOrder = ByteOrder.LittleEndian;
-
+			reader = new DataReader(_socket.InputStream);
+			reader.ByteOrder = ByteOrder.LittleEndian;
 			await ThreadPool.RunAsync(PollInput);
 		}
 
@@ -84,14 +85,14 @@ namespace Lego.Ev3.WinRT
 			{
 				try
 				{
-					DataReaderLoadOperation drlo = _reader.LoadAsync(2);
+					DataReaderLoadOperation drlo = reader.LoadAsync(2);
 					await drlo.AsTask(_tokenSource.Token);
-					short size = _reader.ReadInt16();
+					short size = reader.ReadInt16();
 					byte[] data = new byte[size];
 
-					drlo = _reader.LoadAsync((uint)size);
+					drlo = reader.LoadAsync((uint)size);
 					await drlo.AsTask(_tokenSource.Token);
-					_reader.ReadBytes(data);
+					reader.ReadBytes(data);
 
 					if(ReportReceived != null)
 						ReportReceived(this, new ReportReceivedEventArgs { Report = data });
@@ -100,6 +101,11 @@ namespace Lego.Ev3.WinRT
 				{
 					return;
 				}
+                catch(System.Exception)
+                {
+                    if (BrickDisconnected != null)
+                        BrickDisconnected.Invoke(this, new BrickDisconnectedEventArgs() {Details =  "Brick disconnected due to unexpected behavior" });
+                }
 			}
 		}
 
@@ -109,10 +115,10 @@ namespace Lego.Ev3.WinRT
 		public void Disconnect()
 		{
 			_tokenSource.Cancel();
-			if(_reader != null)
+			if(reader != null)
 			{
-				_reader.DetachStream();
-				_reader = null;
+				reader.DetachStream();
+				reader = null;
 			}
 
 			if(_socket != null)
@@ -137,5 +143,10 @@ namespace Lego.Ev3.WinRT
 			if(_socket != null)
 				await _socket.OutputStream.WriteAsync(data.AsBuffer());
 		}
-	}
+
+        public DataReader getReader()
+        {
+            return reader;
+        }
+    }
 }
