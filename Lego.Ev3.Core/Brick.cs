@@ -31,7 +31,7 @@ namespace Lego.Ev3.Core
 		public ushort TopLineHeight { get { return 10; } }
 
 		private readonly SynchronizationContext _context = SynchronizationContext.Current;
-		private readonly ICommunication _comm;
+		public ICommunication _comm { get; set; }
 		private CancellationTokenSource _tokenSource;
 		private readonly bool _alwaysSendEvents;
 		private readonly DirectCommand _directCommand;
