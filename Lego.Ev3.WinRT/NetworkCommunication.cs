@@ -27,7 +27,8 @@ namespace Lego.Ev3
 		/// Event fired when a complete report is received from the EV3 brick.
 		/// </summary>
 		public event EventHandler<ReportReceivedEventArgs> ReportReceived;
-
+		public event EventHandler<BrickDisconnectedEventArgs> BrickDisconnected;
+		
 		private const string UnlockCommand = "GET /target?sn=\r\nProtocol:EV3\r\n\r\n";
 
 		private CancellationTokenSource _tokenSource;
@@ -102,8 +103,8 @@ namespace Lego.Ev3
 				}
 				catch(Exception)
 				{
-					// swallow exceptions...if we tank here, it's likely a disconnect and we can't do much anyway
-				}
+		                        BrickDisconnected?.Invoke(this, new BrickDisconnectedEventArgs() { Details = "Brick disconnected due to unexpected behavior" });
+		                }
 			}
 		}
 
