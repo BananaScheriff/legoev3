@@ -16,7 +16,10 @@ namespace Lego.Ev3.Core
 		/// Fired when a full report is ready to parse and process.
 		/// </summary>
 		event EventHandler<ReportReceivedEventArgs> ReportReceived;
-
+	        /// <summary>
+	        /// Fired when unexpected brick disconnection happen 
+	        /// </summary>
+	        event EventHandler<BrickDisconnectedEventArgs> BrickDisconnected;
 		/// <summary>
 		/// Connect to the EV3 brick.
 		/// </summary>
