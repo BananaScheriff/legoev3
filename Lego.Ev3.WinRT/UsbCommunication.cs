@@ -7,101 +7,124 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Storage;
 using Lego.Ev3.Core;
+using Windows.Storage.Streams;
 
 namespace Lego.Ev3.WinRT
 {
-	/// <summary>
-	/// Communicate with EV3 brick over USB HID
-	/// </summary>
-	public sealed class UsbCommunication : ICommunication
-	{
-		/// <summary>
-		/// Event fired when a complete report is received from the EV3 brick.
-		/// </summary>
-		public event EventHandler<ReportReceivedEventArgs> ReportReceived;
-		private const UInt16 VID = 0x0694;
-		private const UInt16 PID = 0x0005;
-		private const UInt16 UsagePage = 0xff00;
-		private const UInt16 UsageId = 0x0001;
+    /// <summary>
+    /// Communicate with EV3 brick over USB HID
+    /// </summary>
+    public sealed class UsbCommunication : ICommunication
+    {
+        private HidDevice _hidDevice;
+        /// <summary>
+        /// Event fired when a complete report is received from the EV3 brick.
+        /// </summary>
+        public event EventHandler<ReportReceivedEventArgs> ReportReceived;
+        public event EventHandler<BrickDisconnectedEventArgs> BrickDisconnected;
 
-		private HidDevice _hidDevice;
+        private const UInt16 VID = 0x0694;
+        private const UInt16 PID = 0x0005;
+        private const UInt16 UsagePage = 0xff00;
+        private const UInt16 UsageId = 0x0001;
 
-		private readonly string _deviceName;
-        	private readonly string _deviceId;
-		/// <summary>
-		/// Connect to the EV3 brick.
-		/// </summary>
-		/// <returns></returns>
-		public IAsyncAction ConnectAsync()
-		{
-			return ConnectAsyncInternal().AsAsyncAction();
-		}
-    		public UsbCommunication(string device, string deviceId)
-	        {
-	            _deviceName = device;
-	            _deviceId = deviceId;
-	        }
-		private async Task ConnectAsyncInternal()
-		{
-			string selector = HidDevice.GetDeviceSelector(UsagePage, UsageId, VID, PID);
-			DeviceInformationCollection devices = await DeviceInformation.FindAllAsync(selector);
-			DeviceInformation brick = (from d in devices where d.Id == _deviceId select d).FirstOrDefault();
-			if(brick == null)
-				throw new Exception("No LEGO EV3 bricks found.");
 
-			_hidDevice = await HidDevice.FromIdAsync(brick.Id, FileAccessMode.ReadWrite);
-			if(_hidDevice == null)
-				throw new Exception("Unable to connect to LEGO EV3 brick...is the manifest set properly?");
+        private readonly string _deviceName;
+        private readonly string _deviceId;
 
-			_hidDevice.InputReportReceived += HidDeviceInputReportReceived;
-		}
+        /// <summary>
+        /// Create a new NetworkCommunication object
+        /// </summary>
+        /// <param name="device">Devicename of the EV3 brick</param>
+        public UsbCommunication(string device, string deviceId)
+        {
+            _deviceName = device;
+            _deviceId = deviceId;
+        }
 
-		/// <summary>
-		/// Disconnect from the EV3 brick.
-		/// </summary>
-		public void Disconnect()
-		{
-			_hidDevice.InputReportReceived -= HidDeviceInputReportReceived;
 
-			if(_hidDevice != null)
-			{
-				_hidDevice.Dispose();
-				_hidDevice = null;
-			}
-		}
 
-		/// <summary>
-		/// Write data to the EV3 brick.
-		/// </summary>
-		/// <param name="data">Byte array to write to the EV3 brick.</param>
-		/// <returns></returns>
-		public IAsyncAction WriteAsync([ReadOnlyArray]byte[] data)
-		{
-			return WriteAsyncInternal(data).AsAsyncAction();
-		}
+        /// <summary>
+        /// Connect to the EV3 brick.
+        /// </summary>
+        /// <returns></returns>
+        public IAsyncAction ConnectAsync()
+        {
+            return ConnectAsyncInternal().AsAsyncAction();
+        }
 
-		private async Task WriteAsyncInternal(byte[] data)
-		{
-			if(_hidDevice == null)
-				return;
+        private async Task ConnectAsyncInternal()
+        {
+            //wybór kryterium na podstawie podanych zmiennych
+            string selector = HidDevice.GetDeviceSelector(UsagePage, UsageId, VID, PID);
+            //wybór ze wszystkich urzadzeń tylkote zgodne z kryterium
+            DeviceInformationCollection devices = await DeviceInformation.FindAllAsync(selector);
+            //wybór konkretnego kontrolerea, który ma unikalne ID wyszukiwanego urządzenia
+            DeviceInformation brick = (from d in devices where d.Id == _deviceId select d).FirstOrDefault();
+            //w przypadku nie wykrycia poszukiwanego kontrolera zgłoś błąd
+            if (brick == null)
+                throw new Exception("No LEGO EV3 bricks found.");
+            //jeżeli urządzenie istnieje nawiąż połączenie dwustronne z kontrolerem
+            _hidDevice = await HidDevice.FromIdAsync(brick.Id, FileAccessMode.ReadWrite);
+            //jeżeli nie da się nawiązać połączenia z kontrolerem zgłoś błąd
+            if (_hidDevice == null)
+                throw new Exception("Unable to connect to LEGO EV3 brick...is the manifest set properly?");
+            //jeżeli wszystko przebiegło pomyślnie przypisz funckję
+            _hidDevice.InputReportReceived += HidDeviceInputReportReceived;
+        }
 
-			HidOutputReport report = _hidDevice.CreateOutputReport();
-			data.CopyTo(0, report.Data, 1, data.Length); 
-			await _hidDevice.SendOutputReportAsync(report);
-		}
+        /// <summary>
+        /// Disconnect from the EV3 brick.
+        /// </summary>
+        public void Disconnect()
+        {
 
-		private void HidDeviceInputReportReceived(HidDevice sender, HidInputReportReceivedEventArgs args)
-		{
-			byte[] data = args.Report.Data.ToArray();
 
-			short size = (short)(data[1] | data[2] << 8);
-			if(size == 0)
-				return;
+            if (_hidDevice != null)
+            {
+                _hidDevice.InputReportReceived -= HidDeviceInputReportReceived;
+                _hidDevice.Dispose();
+                _hidDevice = null;
+            }
+        }
 
-			byte[] report = new byte[size];
-			Array.Copy(data, 3, report, 0, size);
-			if (ReportReceived != null)
-				ReportReceived(this, new ReportReceivedEventArgs { Report = report });
-		}
-	}
+        /// <summary>
+        /// Write data to the EV3 brick.
+        /// </summary>
+        /// <param name="data">Byte array to write to the EV3 brick.</param>
+        /// <returns></returns>
+        public IAsyncAction WriteAsync([ReadOnlyArray]byte[] data)
+        {
+            return WriteAsyncInternal(data).AsAsyncAction();
+        }
+
+        private async Task WriteAsyncInternal(byte[] data)
+        {
+            if (_hidDevice == null)
+                return;
+
+            HidOutputReport report = _hidDevice.CreateOutputReport();
+            data.CopyTo(0, report.Data, 1, data.Length);
+            await _hidDevice.SendOutputReportAsync(report);
+        }
+
+        private void HidDeviceInputReportReceived(HidDevice sender, HidInputReportReceivedEventArgs args)
+        {
+            byte[] data = args.Report.Data.ToArray();
+
+            short size = (short)(data[1] | data[2] << 8);
+            if (size == 0)
+                return;
+
+            byte[] report = new byte[size];
+            Array.Copy(data, 3, report, 0, size);
+            if (ReportReceived != null)
+                ReportReceived(this, new ReportReceivedEventArgs { Report = report });
+        }
+
+        public DataReader getReader()
+        {
+            throw new Exception("Reader not implemented in USBCommunication");
+        }
+    }
 }
