@@ -22,12 +22,12 @@ namespace Lego.Ev3.Core
 #else
 		{ add {} remove {} }
 #endif
-
-	/// <summary>
-	/// Test Connect method.
-	/// </summary>
-	/// <returns></returns>
-	public
+        public event EventHandler<BrickDisconnectedEventArgs> BrickDisconnected;
+        /// <summary>
+        /// Test Connect method.
+        /// </summary>
+        /// <returns></returns>
+        public
 #if WINRT
 	IAsyncAction
 #else
@@ -74,5 +74,10 @@ namespace Lego.Ev3.Core
 #endif
 			;
 		}
-	}
+
+        public Task GetDevices()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

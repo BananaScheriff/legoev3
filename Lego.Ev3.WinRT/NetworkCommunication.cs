@@ -10,6 +10,9 @@ using Windows.Storage.Streams;
 using Lego.Ev3.Core;
 using Buffer = Windows.Storage.Streams.Buffer;
 using ThreadPool = Windows.System.Threading.ThreadPool;
+using System.Collections.Generic;
+using Windows.Devices.Enumeration;
+
 
 namespace Lego.Ev3
 #if WINRT
@@ -152,6 +155,11 @@ namespace Lego.Ev3
         public DataReader getReader()
         {
             throw new Exception("Reader not implemented in NetworkCommunication");
+        }
+
+        public IAsyncOperation<DeviceInformationCollection> GetDevices()
+        {
+            return null;
         }
     }
 }

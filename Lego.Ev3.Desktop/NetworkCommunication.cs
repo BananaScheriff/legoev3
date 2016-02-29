@@ -21,8 +21,8 @@ namespace Lego.Ev3
 		/// Event fired when a complete report is received from the EV3 brick.
 		/// </summary>
 		public event EventHandler<ReportReceivedEventArgs> ReportReceived;
-
-		private const string UnlockCommand = "GET /target?sn=\r\nProtocol:EV3\r\n\r\n";
+        public event EventHandler<BrickDisconnectedEventArgs> BrickDisconnected;
+        private const string UnlockCommand = "GET /target?sn=\r\nProtocol:EV3\r\n\r\n";
 
 		private TcpClient _client;
 		private readonly string _address;
@@ -100,5 +100,10 @@ namespace Lego.Ev3
 		{
 			return _stream.WriteAsync(data, 0, data.Length);
 		}
-	}
+
+        public Task GetDevices()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

@@ -20,8 +20,8 @@ namespace Lego.Ev3.Phone
 		/// Event fired when a complete report is received from the EV3 brick.
 		/// </summary>
 		public event EventHandler<ReportReceivedEventArgs> ReportReceived;
-
-		private StreamSocket _socket;
+        public event EventHandler<BrickDisconnectedEventArgs> BrickDisconnected;
+        private StreamSocket _socket;
 		private DataReader _reader;
 		private CancellationTokenSource _tokenSource;
 
@@ -120,5 +120,10 @@ namespace Lego.Ev3.Phone
 			if(_socket != null)
 				await _socket.OutputStream.WriteAsync(data.AsBuffer());
 		}
-	}
+
+        public Task GetDevices()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

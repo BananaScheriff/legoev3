@@ -16,8 +16,8 @@ namespace Lego.Ev3.Desktop
 		/// Event fired when a complete report is received from the EV3 brick.
 		/// </summary>
 		public event EventHandler<ReportReceivedEventArgs> ReportReceived;
-
-		private SerialPort _serialPort;
+        public event EventHandler<BrickDisconnectedEventArgs> BrickDisconnected;
+        private SerialPort _serialPort;
 		private BinaryReader _reader;
 
 		/// <summary>
@@ -84,5 +84,10 @@ namespace Lego.Ev3.Desktop
 					_serialPort.Write(data, 0, data.Length);
 			});
 		}
-	}
+
+        public Task GetDevices()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

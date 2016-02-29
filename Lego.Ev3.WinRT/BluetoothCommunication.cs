@@ -60,13 +60,9 @@ namespace Lego.Ev3.WinRT
         private async Task ConnectAsyncInternal()
         {
             _tokenSource = new CancellationTokenSource();
-            //wybierz odpowiedni selektor dla pożądanego protokołu - Bluetooth
             string selector = RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort);
-            //dla wybranego selektora znajdz wszystkie urządzenia, któire spełniają kryterium
             DeviceInformationCollection devices = await DeviceInformation.FindAllAsync(selector);
-            //znajdz urządzenie, które zawiera podaną nazwe i ID
             DeviceInformation device = (from d in devices where d.Id == _deviceId select d).FirstOrDefault();
-            //w razie braku powodzenia, zwróc wyjątek
             if (device == null)
                 throw new Exception("EV3 not found.");
 
@@ -80,13 +76,11 @@ namespace Lego.Ev3.WinRT
 
             reader = new DataReader(_socket.InputStream);
             reader.ByteOrder = ByteOrder.LittleEndian;
-            //rozpocznij zczytywanie danych z kontrolera
             await ThreadPool.RunAsync(PollInput);
         }
 
         private async void PollInput(IAsyncAction operation)
         {
-            //dopóki gniazdo komunikacyjne nie zostało zamknięte - istnieje
             while (_socket != null)
             {
                 try
@@ -109,7 +103,6 @@ namespace Lego.Ev3.WinRT
                 }
                 catch (System.Exception)
                 {
-                    //jezeli wydarzenie zostało przypisane gdzies w kodzie - wywołaj
                     BrickDisconnected?.Invoke(this, new BrickDisconnectedEventArgs() { Details = "Brick disconnected due to unexpected behavior" });
                 }
             }
@@ -153,6 +146,13 @@ namespace Lego.Ev3.WinRT
         public DataReader getReader()
         {
             return reader;
+        }
+
+        IAsyncOperation<DeviceInformationCollection> ICommunication.GetDevices()
+        {
+            _tokenSource = new CancellationTokenSource();
+            string selector = RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort);
+            return DeviceInformation.FindAllAsync(selector);
         }
     }
 }

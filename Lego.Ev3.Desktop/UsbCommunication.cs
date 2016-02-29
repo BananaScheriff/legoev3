@@ -18,9 +18,9 @@ namespace Lego.Ev3.Desktop
 		/// Event fired when a complete report is received from the EV3 brick.
 		/// </summary>
 		public event EventHandler<ReportReceivedEventArgs> ReportReceived;
-
-		// our brick VID and PID
-		private const UInt16 VID = 0x0694;
+        public event EventHandler<BrickDisconnectedEventArgs> BrickDisconnected;
+        // our brick VID and PID
+        private const UInt16 VID = 0x0694;
 		private const UInt16 PID = 0x0005;
 
 		// full-size report
@@ -193,5 +193,10 @@ namespace Lego.Ev3.Desktop
 			if(!found)
 				throw new Exception("No LEGO EV3s found in HID device list.");
 		}
-	}
+
+        public Task GetDevices()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

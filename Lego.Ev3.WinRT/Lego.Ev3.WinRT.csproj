@@ -125,9 +125,6 @@
     <Compile Include="..\Lego.Ev3.Core\DirectCommand.cs">
       <Link>Core\DirectCommand.cs</Link>
     </Compile>
-    <Compile Include="..\Lego.Ev3.Core\DummyCommunication.cs">
-      <Link>Core\DummyCommunication.cs</Link>
-    </Compile>
     <Compile Include="..\Lego.Ev3.Core\Enums.cs">
       <Link>Core\Enums.cs</Link>
     </Compile>

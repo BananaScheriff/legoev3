@@ -55,21 +55,14 @@ namespace Lego.Ev3.WinRT
 
         private async Task ConnectAsyncInternal()
         {
-            //wybór kryterium na podstawie podanych zmiennych
             string selector = HidDevice.GetDeviceSelector(UsagePage, UsageId, VID, PID);
-            //wybór ze wszystkich urzadzeń tylkote zgodne z kryterium
             DeviceInformationCollection devices = await DeviceInformation.FindAllAsync(selector);
-            //wybór konkretnego kontrolerea, który ma unikalne ID wyszukiwanego urządzenia
             DeviceInformation brick = (from d in devices where d.Id == _deviceId select d).FirstOrDefault();
-            //w przypadku nie wykrycia poszukiwanego kontrolera zgłoś błąd
             if (brick == null)
                 throw new Exception("No LEGO EV3 bricks found.");
-            //jeżeli urządzenie istnieje nawiąż połączenie dwustronne z kontrolerem
             _hidDevice = await HidDevice.FromIdAsync(brick.Id, FileAccessMode.ReadWrite);
-            //jeżeli nie da się nawiązać połączenia z kontrolerem zgłoś błąd
             if (_hidDevice == null)
                 throw new Exception("Unable to connect to LEGO EV3 brick...is the manifest set properly?");
-            //jeżeli wszystko przebiegło pomyślnie przypisz funckję
             _hidDevice.InputReportReceived += HidDeviceInputReportReceived;
         }
 
@@ -78,8 +71,6 @@ namespace Lego.Ev3.WinRT
         /// </summary>
         public void Disconnect()
         {
-
-
             if (_hidDevice != null)
             {
                 _hidDevice.InputReportReceived -= HidDeviceInputReportReceived;
@@ -125,6 +116,12 @@ namespace Lego.Ev3.WinRT
         public DataReader getReader()
         {
             throw new Exception("Reader not implemented in USBCommunication");
+        }
+
+        public IAsyncOperation<DeviceInformationCollection> GetDevices()
+        {
+            string selector = HidDevice.GetDeviceSelector(UsagePage, UsageId, VID, PID);
+            return DeviceInformation.FindAllAsync(selector);
         }
     }
 }
